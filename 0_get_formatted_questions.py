@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 
-folder_path = "./biaslens_questions"
+folder_path = "./data/biaslens_questions"
 
 # Initialize an empty DataFrame to combine all CSVs
 combined_df = pd.DataFrame()
