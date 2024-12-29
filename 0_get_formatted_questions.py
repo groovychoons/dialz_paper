@@ -48,6 +48,7 @@ def add_target_group(df):
 
 # Apply the function to your combined DataFrame
 combined_df = add_target_group(combined_df)
+
 # Count and print the number of questions without a target group
 no_target_count = combined_df['Target Group'].isna().sum()
 print(f"Count of questions without a target group: {no_target_count}")
@@ -60,3 +61,28 @@ print(combined_df['Target Group'].value_counts())
 
 combined_df['Target Group'] = combined_df['Target Group'].fillna("none")
 combined_df.to_csv("./data/biaslens_with_targets.csv")
+print("Saved the DataFrame with target groups to 'biaslens_with_targets.csv'")
+
+# Define the parent categories
+sexuality_categories = ["sexuality:generic", "sexuality:gay", "intersectional:lesbian"]
+race_categories = ["race:generic", "race:black", "race:hispanic", "intersectional:women_of_color"]
+gender_categories = ["gender:women"]
+
+# Add a 'Target Generic' column for each category
+sexuality_sample = combined_df[combined_df['Target Group'].isin(sexuality_categories)].sample(n=200, random_state=42, replace=False)
+sexuality_sample['Target Generic'] = 'sexuality'
+
+race_sample = combined_df[combined_df['Target Group'].isin(race_categories)].sample(n=200, random_state=42, replace=False)
+race_sample['Target Generic'] = 'race'
+
+gender_sample = combined_df[combined_df['Target Group'].isin(gender_categories)].sample(n=200, random_state=42, replace=False)
+gender_sample['Target Generic'] = 'gender'
+
+# Combine the sampled questions into a single DataFrame
+sampled_questions = pd.concat([sexuality_sample, race_sample, gender_sample], ignore_index=True)
+sampled_questions = sampled_questions.drop(columns=['Role'])
+
+# Save the resulting DataFrame to a CSV file
+sampled_questions.to_csv('./data/biaslens_sample_200.csv', index=False)
+
+print("Sampled questions saved to 'biaslens_sample_200.csv'.")
