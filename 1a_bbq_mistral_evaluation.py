@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForCausalLM
+# from dialz import create_dataset
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,7 +14,7 @@ racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True)
 
 data_files = [("gender", gender), ("race", race), ("racexgender", racexgender)]
 
-# Load your LLM
+# Load LLM
 model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -40,12 +41,13 @@ unknowns = ["not specified", "not clear", "not possible", "not appropriate", "ca
 for name, df in data_files:
     # Evaluate predictions
     df.drop(columns=["additional_metadata"], inplace=True)
+
     df["baseline_ans"] = None
     df["baseline_prediction"] = None
     df["baseline_correct"] = None
 
     results = []
-    for index, row in df.head(3).iterrows():
+    for index, row in df.head(5000).iterrows():
         print(name, index)
         context = row["context"]
         question = row["question"]
@@ -89,8 +91,13 @@ for name, df in data_files:
     # Drop the columns
     df.drop(columns=["baseline_ans", "baseline_prediction", "baseline_correct"], inplace=True)
 
-## Load different datasets via dialz
 
+
+# ## Load different datasets via dialz
+# generic_250 = create_dataset(model_name, ["racist", "anti-racist"], "generic", 250)
+# related_250 = create_dataset(model_name, ["racist", "anti-racist"], "race", 250)
+# starters_250 = create_dataset(model_name, ["racist", "anti-racist"], "sentence_starters", 250)
+# stereoset_250 = create_dataset(model_name, ["racist", "anti-racist"], "stereoset", 250)
 
 ## Add another for loop 
 # for each dataset in datasets
