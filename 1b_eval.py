@@ -1,4 +1,5 @@
 import os
+import datetime
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from dialz import Dataset
@@ -6,6 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 hf_token = os.getenv("HF_TOKEN")
+print(datetime.datetime.now())
 
 # Read in all 3 files
 gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True)
@@ -40,6 +42,7 @@ unknowns = ["not specified", "not clear", "not possible", "not appropriate", "ca
 ## for all 3 files
 for name, df in data_files:
     # Evaluate predictions
+    print(datetime.datetime.now())
     df.drop(columns=["additional_metadata"], inplace=True)
 
     # df["baseline_ans"] = None
@@ -47,8 +50,10 @@ for name, df in data_files:
     # df["baseline_correct"] = None
 
     # results = []
-    # for index, row in df.head(3).iterrows():
-    #     print(name, index)
+    # for index, row in df.head(5000).iterrows():
+    #     if index % 500 == 0:
+    #         print(name, index)
+
     #     context = row["context"]
     #     question = row["question"]
         
@@ -90,7 +95,6 @@ for name, df in data_files:
 
     # # Drop the columns
     # df.drop(columns=["baseline_ans", "baseline_prediction", "baseline_correct"], inplace=True)
-
 
 
 ## Load different datasets via dialz

@@ -2,9 +2,9 @@
 
 #SBATCH --job-name=docs_ex1
 #SBATCH --output=docs_ex1.out
-#SBATCH --gpus=1
-#SBATCH --partition=hopper
-#SBATCH --time=27:00:00         # Hours:Mins:Secs
+#SBATCH --gpus=2
+#SBATCH --partition=ampere
+#SBATCH --time=36:00:00         # Hours:Mins:Secs
 
 hostname
 nvidia-smi --list-gpus
