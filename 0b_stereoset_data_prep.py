@@ -54,10 +54,10 @@ gender_entries = create_dataset_entries(data, bias_type_filter="gender")
 
 # 3. Write out the results to two JSON files
 #    The output format is a list of { "positive": "...", "negative": "..." } dictionaries.
-with open("./data/stereoset_race.json", "w", encoding="utf-8") as f:
+with open("./data/stereoset/stereoset_race.json", "w", encoding="utf-8") as f:
     json.dump(race_entries, f, indent=2, ensure_ascii=False)
 
-with open("./data/stereoset_gender.json", "w", encoding="utf-8") as f:
+with open("./data/stereoset/stereoset_gender.json", "w", encoding="utf-8") as f:
     json.dump(gender_entries, f, indent=2, ensure_ascii=False)
 
 print("Done! Created stereoset_race.json and stereoset_gender.json.")

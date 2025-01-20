@@ -1,26 +1,46 @@
 import os
 import datetime
 import pandas as pd
+import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
-# from dialz import create_dataset
 from dotenv import load_dotenv
+import sys
 
 load_dotenv()
 hf_token = os.getenv("HF_TOKEN")
 print(datetime.datetime.now())
 
+
+if len(sys.argv) > 1:
+    model_name = sys.argv[1]
+else:
+    raise ValueError("Model name must be provided as a command-line argument.")
+
+# Map model names to short names
+model_short_names = {
+    "Qwen/Qwen2.5-7B-Instruct": "qwen",
+    "meta-llama/Llama-3.1-8B-Instruct": "llama",
+    "mistralai/Mistral-7B-Instruct-v0.1": "mistral",
+}
+
+model_short_name = model_short_names.get(model_name)
+if not model_short_name:
+    raise ValueError(f"Unknown model name: {model_name}")
+
 # Read in all 3 files
-gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True)
-race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True)
-racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True)
+gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True).head(5000)
+race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True).head(5000)
+racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True).head(5000)
 
 data_files = [("gender", gender), ("race", race), ("racexgender", racexgender)]
 
 # Load LLM
-model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token_id = tokenizer.eos_token_id
 model = AutoModelForCausalLM.from_pretrained(model_name)
+
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+model = model.to(device)
 
 ## Get baseline first
 def generate_baseline(context, question, answers, max_new_tokens=50, repetition_penalty=1.1):
@@ -50,7 +70,7 @@ for name, df in data_files:
     df["baseline_correct"] = None
 
     results = []
-    for index, row in df.head(5000).iterrows():
+    for index, row in df.iterrows():
         if index % 500 == 0:
             print(name, index)
 
@@ -91,24 +111,10 @@ for name, df in data_files:
         df.at[index, "baseline_correct"] = (predicted_label == correct_label)
 
     # Save baseline results
-    df.to_csv(f'./data/bbq/{name}_baseline.csv', index=False)
+    output_dir = f'./results/{model_short_name}'
+    os.makedirs(output_dir, exist_ok=True)
+    df.to_csv(f'{output_dir}/bbq_{name}_baseline.csv', index=False)
 
     # Drop the columns
     df.drop(columns=["baseline_ans", "baseline_prediction", "baseline_correct"], inplace=True)
 
-
-
-# ## Load different datasets via dialz
-# generic_250 = create_dataset(model_name, ["racist", "anti-racist"], "generic", 250)
-# related_250 = create_dataset(model_name, ["racist", "anti-racist"], "race", 250)
-# starters_250 = create_dataset(model_name, ["racist", "anti-racist"], "sentence_starters", 250)
-# stereoset_250 = create_dataset(model_name, ["racist", "anti-racist"], "stereoset", 250)
-
-## Add another for loop 
-# for each dataset in datasets
-## Create model via dialz
-
-
-## Output results for each steering vector, each dataset (4)
-
-## Save them

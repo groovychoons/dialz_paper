@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 
-folder_path = "./data/biaslens_questions"
+folder_path = "./data/biaslens"
 
 # Initialize an empty DataFrame to combine all CSVs
 combined_df = pd.DataFrame()
@@ -57,7 +57,7 @@ print("Counts for each target group:")
 print(combined_df['Target Group'].value_counts())
 
 combined_df['Target Group'] = combined_df['Target Group'].fillna("none")
-combined_df.to_csv("./data/biaslens_with_targets.csv")
+combined_df.to_csv("./data/biaslens/new/biaslens_with_targets.csv")
 print("Saved the DataFrame with target groups to 'biaslens_with_targets.csv'")
 
 # Define the parent categories
@@ -91,13 +91,13 @@ race_sample_2 = remaining_df[remaining_df['Target Group'].isin(race_categories)]
 race_sample_2['Target Generic'] = 'race'
 
 
-race_sample_1.iloc[:, 2].to_json('./data/race.json', orient='values')
-gender_sample_1.iloc[:, 2].to_json('./data/gender.json', orient='values')
+race_sample_1.iloc[:, 2].to_json('./data/biaslens/new/race.json', orient='values')
+gender_sample_1.iloc[:, 2].to_json('./data/biaslens/new/gender.json', orient='values')
 
 # Combine the sampled questions into a single DataFrame
 sampled_questions = pd.concat([race_sample_2, gender_sample_2], ignore_index=True)
 sampled_questions = sampled_questions.drop(columns=['Role'])
 
 # Save the resulting DataFrame to a CSV file
-sampled_questions.to_csv('./data/biaslens_annotation_sample_500.csv', index=False)
+sampled_questions.to_csv('./data/biaslens/new/biaslens_annotation_sample_500.csv', index=False)
 print("Sampled questions saved to 'biaslens_annotation_sample_500.csv'.")
