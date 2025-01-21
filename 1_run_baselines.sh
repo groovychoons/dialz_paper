@@ -10,5 +10,5 @@ MODELS=(
 # Loop through each model and run the Python script
 for MODEL in "${MODELS[@]}"; do
   echo "Running script for model: $MODEL"
-  python 1a_bbq_baselines.py "$MODEL"
+  python 1_bbq_baselines.py "$MODEL"
 done
