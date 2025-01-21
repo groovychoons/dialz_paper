@@ -33,7 +33,6 @@ race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True).head(5000
 racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True).head(5000)
 
 data_files = [("gender", gender), ("race", race), ("racexgender", racexgender)]
-data_files = [("gender", gender), ("race", race)]
 
 # Load LLM
 tokenizer = AutoTokenizer.from_pretrained(model_name)
