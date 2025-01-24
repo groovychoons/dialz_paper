@@ -1,4 +1,3 @@
-import os
 import sys
 import csv
 import datetime
@@ -7,10 +6,7 @@ import pandas as pd
 from transformers import AutoTokenizer
 from datasets import load_dataset
 from dialz import Dataset, ControlModel, ControlVector
-from dotenv import load_dotenv
 
-load_dotenv()
-hf_token = os.getenv("HF_TOKEN")
 print(datetime.datetime.now())
 
 if len(sys.argv) > 1:
@@ -30,19 +26,19 @@ if not model_short_name:
     raise ValueError(f"Unknown model name: {model_name}")
 
 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M")  # e.g., "20250120_1430"
-log_file = f"./logs/{timestamp}_{model_short_name}_steering_optimisation.csv"
-
 
 # Read in all 3 files
-gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True).head(5000)
-race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True).head(5000)
-racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True).head(5000)
+gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True).head(3000)
+race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True).head(3000)
 
-data_files = [("gender", gender), ("race", race), ("racexgender", racexgender)]
+data_files = [("gender", gender), ("race", race)]
 
-print("Loading MMLU dataset...")
-mmlu = load_dataset("cais/mmlu", "all", split="test")
-mmlu_df = pd.DataFrame(mmlu)
+# print("Loading MMLU dataset...")
+# mmlu = load_dataset("cais/mmlu", "all", split="test")
+# print("Processing MMLU dataset...")
+# full_df = pd.DataFrame(mmlu)
+# # Get an equal sample from all subjects up to roughly 1000 questions
+# mmlu_df = full_df.groupby('subject').sample(n=1000 // full_df['subject'].nunique(), random_state=42).reset_index(drop=True)
 
 # Load Tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -137,29 +133,45 @@ def get_prediction_with_vector(model, steering_vector, coeff, context, question,
 
     return predicted_label
 
-def objective(trial, bbq_df):
+def objective(trial, bbq_df, axis):
     """
     Objective function to optimize hyperparameters for the best BBQ accuracy.
     """
+    print(datetime.datetime.now())
+
+    prompt_categories = {
+        "race": ["generic", "starters", "race"],
+        "gender": ["generic", "starters", "gender"]
+    }
 
     # Hyperparameters to optimize
     prompt_type = trial.suggest_categorical(
         "prompt_type", 
-        ["generic", "starters", "race"]
+        prompt_categories[axis]
     )
 
-    num_sents = trial.suggest_int("num_sents", 50, 500, step=50)
+    num_sents = trial.suggest_int("num_sents", 100, 500, step=50)
     
-    items = trial.suggest_categorical(
-        "items", 
-        [
+    categories = {
+        "race": [
             "not racist, racist",
             "anti-racist, racist",
             "woke, racist",
             "love Black people, hate Black people",
             "racially inclusive, racially discriminatory",
-            "racially tolerant, racially intolerant",
+        ],
+        "gender": [
+            "feminist, sexist",
+            "feminist, anti-feminist",
+            "feminist, a woman hater",
+            "love women, hate women",
+            "not sexist, sexist",
         ]
+    }
+
+    items = trial.suggest_categorical(
+        "items", 
+        categories[axis]
     )
 
     system_prompt = trial.suggest_categorical(
@@ -172,7 +184,16 @@ def objective(trial, bbq_df):
         ]
     )
 
-    coeff = trial.suggest_float("coeff", -3, 3, step=0.2)
+    coeff = trial.suggest_float("coeff", -2, 2, step=0.2)
+
+    control_method = trial.suggest_categorical(
+        "control_method",
+        ["pca_diff", "pca_center"]
+    )
+
+    start_layer = trial.suggest_int("start_layer", low=-5, high=-1, step=1)
+    end_layer   = trial.suggest_int("end_layer",   low=-18, high=-6, step=1)
+    chosen_layer_ids = list(range(start_layer, end_layer, -1))
 
     selected_items = items.split(", ")
 
@@ -186,14 +207,26 @@ def objective(trial, bbq_df):
     )
 
     # Train the control vector
-    model = ControlModel(model_name, list(range(-5, -18, -1)), hf_token)
-    vector = ControlVector.train(model, dataset)
+    model = ControlModel(
+            model_name, 
+            chosen_layer_ids
+        )
+    
+    vector = ControlVector.train(
+            model, 
+            dataset, 
+            method=control_method
+        )
 
     # Evaluate BBQ accuracy
     bbq_correct = 0
     bbq_total = len(bbq_df)
 
     for idx, row in bbq_df.iterrows():
+        if idx % 2000 == 0:
+            print(f"Processing row {idx}/{len(bbq_df)}")
+            print("At time:", datetime.datetime.now())
+
         context = row["context"]
         question = row["question"]
         answers = [row["ans0"], row["ans1"], row["ans2"]]
@@ -213,64 +246,64 @@ def objective(trial, bbq_df):
 
     bbq_accuracy = bbq_correct / bbq_total
 
-    mmlu_correct = 0
-    mmlu_total = len(mmlu_df)
+    # mmlu_correct = 0
+    # mmlu_total = len(mmlu_df)
 
-    for idx, row in mmlu_df.iterrows():
-        question = row["question"]
-        answers = row["choices"]
-        correct_label = row["answer"]
+    # for idx, row in mmlu_df.iterrows():
+    #     if idx % 2000 == 0:
+    #         print(f"Processing row {idx}/{len(mmlu_df)}")
+    #         print("At time:", datetime.datetime.now())
 
-        predicted_label = get_prediction_with_vector(
-            model, 
-            vector,
-            coeff,
-            context="",
-            question=question,
-            answers=answers,
-            task="mmlu"
-        )
+    #     question = row["question"]
+    #     answers = row["choices"]
+    #     correct_label = row["answer"]
 
-        if predicted_label == correct_label:
-            mmlu_correct += 1
+    #     predicted_label = get_prediction_with_vector(
+    #         model, 
+    #         vector,
+    #         coeff,
+    #         context="",
+    #         question=question,
+    #         answers=answers,
+    #         task="mmlu"
+    #     )
+
+    #     if predicted_label == correct_label:
+    #         mmlu_correct += 1
     
-    mmlu_accuracy = mmlu_correct / mmlu_total
+    # mmlu_accuracy = mmlu_correct / mmlu_total
 
-    return bbq_accuracy, mmlu_accuracy
+    return bbq_accuracy #mmlu_accuracy
 
+def run_bayes_optimization(bbq_df, axis):
+    study = optuna.create_study(direction="maximize") 
+    study.optimize(lambda t: objective(t, bbq_df, axis), n_trials=200)
 
-def run_bayes_optimization(bbq_df):
-    study = optuna.create_study(directions=["maximize", "maximize"])
-    study.optimize(lambda t: objective(t, bbq_df), n_trials=50)
-
-    fieldnames = ["Trial", "Accuracy (BBQ)", "Accuracy (MMLU)", "Params"]
+    # Log results
+    fieldnames = ["Trial", "Accuracy (BBQ)", "Params"]
+    log_file = f"./logs/{timestamp}_{model_short_name}_{axis}_steering_optimisation.csv"
     with open(log_file, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
         for i, trial in enumerate(study.trials):
-            bbq_accuracy, mmlu_accuracy = trial.values  # Unpack the tuple
             writer.writerow({
                 "Trial": i,
-                "Accuracy (BBQ)": bbq_accuracy,
-                "Accuracy (MMLU)": mmlu_accuracy,
-                "Params": str(trial.params)  # Convert params dictionary to a string
+                "Accuracy (BBQ)": trial.value,
+                "Params": str(trial.params)
             })
 
-    
-    print("Best trials:")
-    for i, trial in enumerate(study.best_trials):
-        print(f"Trial {i}:")
-        print(f"  Values (accuracies): {trial.values}")  # Access all objective values
-        print(f"  Params: {trial.params}")  # Access the parameters for the trial
+        writer.writerow({
+            "Trial": study.best_trial.number,
+            "Accuracy (BBQ)": study.best_trial.value,
+            "Params": str(study.best_trial.params)
+        })
 
-    best_trials_file = f"./logs/{timestamp}_{model_short_name}_best_trials.txt"
-    with open(best_trials_file, "w") as f:
-        for i, trial in enumerate(study.best_trials):
-            f.write(f"Trial {i}:\n")
-            f.write(f"  Values (accuracies): {trial.values}\n")
-            f.write(f"  Params: {trial.params}\n")
-            f.write("\n")
+    print("Best trial:")
+    best_trial = study.best_trial
+    print(f"  Accuracy (BBQ): {best_trial.value}")
+    print(f"  Params: {best_trial.params}")
 
 
-run_bayes_optimization(race)
+run_bayes_optimization(race, axis="race")
+run_bayes_optimization(gender, axis="gender")

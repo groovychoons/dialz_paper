@@ -28,9 +28,9 @@ if not model_short_name:
     raise ValueError(f"Unknown model name: {model_name}")
 
 # Read in all 3 files
-gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True).head(5000)
-race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True).head(5000)
-racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True).head(5000)
+gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True).head(1000)
+race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True).head(1000)
+racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True).head(1000)
 
 data_files = [("gender", gender), ("race", race), ("racexgender", racexgender)]
 

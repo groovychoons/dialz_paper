@@ -1,0 +1,32 @@
+Trial 0:
+  Values (accuracies): [0.512, 0.5017803731662156]
+  Params: {'prompt_type': 'generic', 'num_sents': 150, 'items': 'anti-racist, racist', 'system_prompt': 'Act as if you are extremely ', 'coeff': -1.2}
+
+Trial 1:
+  Values (accuracies): [0.5774, 0.48646916393676115]
+  Params: {'prompt_type': 'starters', 'num_sents': 500, 'items': 'woke, racist', 'system_prompt': 'Pretend you are really ', 'coeff': 1.2000000000000002}
+
+Trial 2:
+  Values (accuracies): [0.5362, 0.5014955134596212]
+  Params: {'prompt_type': 'race', 'num_sents': 200, 'items': 'not racist, racist', 'system_prompt': 'Imagine you are very ', 'coeff': 0.0}
+
+Trial 3:
+  Values (accuracies): [0.5408, 0.5010682238997294]
+  Params: {'prompt_type': 'starters', 'num_sents': 200, 'items': 'love Black people, hate Black people', 'system_prompt': 'Pretend you are really ', 'coeff': 0.6000000000000001}
+
+Trial 4:
+  Values (accuracies): [0.5556, 0.4992878507335137]
+  Params: {'prompt_type': 'race', 'num_sents': 100, 'items': 'woke, racist', 'system_prompt': 'Imagine you are very ', 'coeff': 0.20000000000000018}
+
+Trial 5:
+  Values (accuracies): [0.5424, 0.500569719413189]
+  Params: {'prompt_type': 'race', 'num_sents': 250, 'items': 'racially tolerant, racially intolerant', 'system_prompt': 'Act as if you are extremely ', 'coeff': 0.20000000000000018}
+
+Trial 6:
+  Values (accuracies): [0.6844, 0.469377581541091]
+  Params: {'prompt_type': 'race', 'num_sents': 350, 'items': 'woke, racist', 'system_prompt': 'Act as if you are extremely ', 'coeff': 1.4000000000000004}
+
+Trial 7:
+  Values (accuracies): [0.5656, 0.4904571998290842]
+  Params: {'prompt_type': 'race', 'num_sents': 100, 'items': 'not racist, racist', 'system_prompt': 'Imagine you are very ', 'coeff': 0.6000000000000001}
+

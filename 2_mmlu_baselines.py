@@ -32,6 +32,11 @@ if not model_short_name:
 print("Loading MMLU dataset...")
 mmlu = load_dataset("cais/mmlu", "all", split="test")
 
+# Process all data in MMLU
+print("Processing MMLU dataset...")
+full_df = pd.DataFrame(mmlu)
+df = full_df.groupby('subject').sample(n=1000 // full_df['subject'].nunique(), random_state=42).reset_index(drop=True)
+
 # Load LLM
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -75,10 +80,6 @@ def generate_baseline(question, answers, max_new_tokens=20, repetition_penalty=1
     new_tokens = generated_outputs.sequences[0, input_ids["input_ids"].size(1):]
 
     return tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-
-# Process all data in MMLU
-print("Processing MMLU dataset...")
-df = pd.DataFrame(mmlu)
 
 # Initialize new columns
 df["baseline_ans"] = None
