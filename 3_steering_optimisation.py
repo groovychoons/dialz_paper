@@ -19,6 +19,7 @@ model_short_names = {
     "Qwen/Qwen2.5-7B-Instruct": "qwen",
     "meta-llama/Llama-3.1-8B-Instruct": "llama",
     "mistralai/Mistral-7B-Instruct-v0.1": "mistral",
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-8B": "deepseek"
 }
 
 model_short_name = model_short_names.get(model_name)
@@ -28,8 +29,8 @@ if not model_short_name:
 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M")  # e.g., "20250120_1430"
 
 # Read in all 3 files
-gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True).head(3000)
-race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True).head(3000)
+gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True)
+race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True)
 
 data_files = [("gender", gender), ("race", race)]
 
@@ -163,8 +164,8 @@ def objective(trial, bbq_df, axis):
         "gender": [
             "feminist, sexist",
             "feminist, anti-feminist",
+            "woke, sexist",
             "feminist, a woman hater",
-            "love women, hate women",
             "not sexist, sexist",
         ]
     }
@@ -185,11 +186,6 @@ def objective(trial, bbq_df, axis):
     )
 
     coeff = trial.suggest_float("coeff", -2, 2, step=0.2)
-
-    control_method = trial.suggest_categorical(
-        "control_method",
-        ["pca_diff", "pca_center"]
-    )
 
     start_layer = trial.suggest_int("start_layer", low=-5, high=-1, step=1)
     end_layer   = trial.suggest_int("end_layer",   low=-18, high=-6, step=1)
@@ -214,8 +210,7 @@ def objective(trial, bbq_df, axis):
     
     vector = ControlVector.train(
             model, 
-            dataset, 
-            method=control_method
+            dataset,
         )
 
     # Evaluate BBQ accuracy
@@ -277,7 +272,7 @@ def objective(trial, bbq_df, axis):
 
 def run_bayes_optimization(bbq_df, axis):
     study = optuna.create_study(direction="maximize") 
-    study.optimize(lambda t: objective(t, bbq_df, axis), n_trials=200)
+    study.optimize(lambda t: objective(t, bbq_df, axis), n_trials=50)
 
     # Log results
     fieldnames = ["Trial", "Accuracy (BBQ)", "Params"]
@@ -304,6 +299,6 @@ def run_bayes_optimization(bbq_df, axis):
     print(f"  Accuracy (BBQ): {best_trial.value}")
     print(f"  Params: {best_trial.params}")
 
-
-run_bayes_optimization(race, axis="race")
+if model_short_name == "deepseek":
+    run_bayes_optimization(race, axis="race")
 run_bayes_optimization(gender, axis="gender")

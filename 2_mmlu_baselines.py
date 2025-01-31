@@ -31,11 +31,7 @@ if not model_short_name:
 # Load the MMLU dataset (test split)
 print("Loading MMLU dataset...")
 mmlu = load_dataset("cais/mmlu", "all", split="test")
-
-# Process all data in MMLU
-print("Processing MMLU dataset...")
-full_df = pd.DataFrame(mmlu)
-df = full_df.groupby('subject').sample(n=1000 // full_df['subject'].nunique(), random_state=42).reset_index(drop=True)
+df = pd.DataFrame(mmlu)
 
 # Load LLM
 tokenizer = AutoTokenizer.from_pretrained(model_name)

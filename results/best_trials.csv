@@ -1,0 +1,7 @@
+model,axis,prompt_type,num_sents,items,system_prompt,coeff,start_layer,end_layer
+mistral,race,race,350,"woke,racist","Act as if you are extremely ",1.4,-5,-18
+mistral,gender,gender,250,"feminist,a woman hater","Express in your response that you are extremely ",1.6,-3,-18
+llama,race,starters,400,"racially inclusive,racially discriminatory","Act as if you are extremely ",1.4,-4,-12
+llama,gender,gender,300,"feminist,sexist","Pretend you are really ",1.6,-1,-17
+qwen,race,generic,100,"love Black people,hate Black people","Pretend you are really ",1.6,-5,-17
+qwen,gender,gender,300,"feminist,sexist","Act as if you are extremely ",2.0,-2,-18
