@@ -1,5 +1,5 @@
-
 import os
+import json
 import pandas as pd
 
 folder_path = "./data/biaslens"
@@ -12,7 +12,7 @@ for file in os.listdir(folder_path):
     if file.endswith(".csv"):  # Process only CSV files
         file_path = os.path.join(folder_path, file)
         temp_df = pd.read_csv(file_path)  # Read each CSV
-        combined_df = pd.concat([combined_df, temp_df], ignore_index=True)  # Combine into one DataFrame
+        combined_df = pd.concat([combined_df, temp_df], ignore_index=True)  # Combine
 
 # Select only unique values in the 'Question' field and capitalize the first letter
 if 'Question' in combined_df.columns:
@@ -24,80 +24,104 @@ def add_target_group(df):
     """
     Adds a 'Target Group' column to the DataFrame based on keyword matches in the 'Question' column.
     """
-    # Initialize the 'Target Group' column with NaN
     df['Target Group'] = None
 
     # Define keywords and their corresponding target group
     target_groups = {
-        "gender:women": ["woman", "women", "female", "females", "girls", "girl", "mother"],
-        "race:generic": ["races", "racial", "race", "minority", "ethnic", "people of color"],
-        "race:black": ["african-american", "african american", "black", "darker skinned"],
-        "race:hispanic": ["hispanic", "latino", "latina"],
-        "intersectional:women_of_color": ["black women", "women of color", "minority women", "ethnic women", "asian women", "hispanic women"]
+        "gender": ["men", "woman", "women", "female", "females", "girls", "girl", "mother"],
+        "race": [
+            "races", "racial", "race", "minority", "ethnic", "people of color",
+            "african-american", "african american", "black", "darker skinned",
+            "hispanic", "latino", "latina", "asian", "indian", "native american"
+        ],
+        "age": ["old", "older", "young", "younger", "elderly", "senior", "teen", "teenager", "child", "children"],
+        "disability": ["disabled", "disabilities", "disability", "handicap", "handicapped", "wheelchair", "blind", "deaf"],
+        "sexuality": ["lesbian", "gay", "bisexual", "transgender", "queer", "lgbt", "lgbtq"],
+        "religion": ["christian", "muslim", "jewish", "hindu", "buddhist", "sikh", "religion", "religious"],
+        "socioeconomic": ["poor", "poverty", "rich", "wealthy", "low-income", "high-income", "middle class"],
     }
 
-    # Iterate over each target group and assign it if a keyword is found
     for target, keywords in target_groups.items():
-        pattern = "|".join(keywords)  # Create a regex pattern for keywords
+        pattern = "|".join(keywords)  # Create a regex pattern
         df.loc[df['Question'].str.contains(pattern, case=False, na=False), 'Target Group'] = target
 
     return df
 
-# Apply the function to your combined DataFrame
+# Apply the function
 combined_df = add_target_group(combined_df)
 
-# Count and print the number of questions without a target group
+# Print some summary counts
 no_target_count = combined_df['Target Group'].isna().sum()
-print(f"Count of questions without a target group: {no_target_count}")
-
 with_target_count = combined_df['Target Group'].notna().sum()
+print(f"Count of questions without a target group: {no_target_count}")
 print(f"Count of questions with a target group: {with_target_count}")
-
 print("Counts for each target group:")
-print(combined_df['Target Group'].value_counts())
+print(combined_df['Target Group'].value_counts(dropna=False))
 
+# Replace NaNs in 'Target Group' with "none"
 combined_df['Target Group'] = combined_df['Target Group'].fillna("none")
-combined_df.to_csv("./data/biaslens/new/biaslens_with_targets.csv")
+
+# Save the combined DataFrame with target groups for reference
+combined_df.to_csv("./data/biaslens/new/biaslens_with_targets.csv", index=False)
 print("Saved the DataFrame with target groups to 'biaslens_with_targets.csv'")
 
-# Define the parent categories
-race_categories = ["intersectional:women_of_color", "race:generic", "race:black", "race:hispanic"]
-gender_categories = ["intersectional:women_of_color", "gender:women"]
+# ------------------------------------------------------------------
+# **NEW CODE**: Sample up to 500 questions per target group and export to JSON
+# ------------------------------------------------------------------
 
+# Identify each unique target group
+unique_groups = combined_df['Target Group'].unique()
 
-# Sample gender questions first
-gender_sample_1 = combined_df[combined_df['Target Group'].isin(gender_categories)].sample(n=500, random_state=42, replace=False)
-gender_sample_1['Target Generic'] = 'gender'
+# Base random_state for reproducibility
+base_random_state = 42
 
-# Exclude the sampled gender questions from the remaining DataFrame
-remaining_df = combined_df.drop(gender_sample_1.index)
+# Directory for saving JSON files
+output_dir = "./data/biaslens/new"
+os.makedirs(output_dir, exist_ok=True)
 
-# Sample the second set of gender questions from the remaining DataFrame
-gender_sample_2 = remaining_df[remaining_df['Target Group'].isin(gender_categories)].sample(n=500, random_state=43, replace=False)
-gender_sample_2['Target Generic'] = 'gender'
+for idx, group in enumerate(unique_groups):
+    # Filter rows for this specific group
+    group_df = combined_df[combined_df['Target Group'] == group]
+    
+    # Determine sample size (up to 500)
+    sample_size = min(len(group_df), 500)
+    if sample_size == 0:
+        print(f"No rows found for target group '{group}'. Skipping.")
+        continue
+    
+    # Sample the data
+    group_sample = group_df.sample(n=sample_size, 
+                                   random_state=base_random_state + idx, 
+                                   replace=False)
+    
+    # Convert the "Question" column to a Python list
+    questions_list = group_sample['Question'].tolist()
+    
+    # Make a file-friendly group name (replace problematic characters)
+    file_friendly_group = str(group).replace(":", "_").replace("/", "_")
+    
+    # Build output path for JSON
+    output_path = os.path.join(output_dir, f"{file_friendly_group}.json")
+    
+    # Write out the questions as a JSON list
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(questions_list, f, indent=2, ensure_ascii=False)
+    
+    print(f"Saved {sample_size} questions for target group '{group}' to '{output_path}'.")
 
-# Exclude the second set of sampled gender questions from the remaining DataFrame
-remaining_df = remaining_df.drop(gender_sample_2.index)
+generic_sample_size = min(len(combined_df), 500)
+generic_sample = combined_df.sample(
+    n=generic_sample_size, 
+    random_state=base_random_state + len(unique_groups), 
+    replace=False
+)
 
-# Sample race questions from the remaining DataFrame
-race_sample_1 = remaining_df[remaining_df['Target Group'].isin(race_categories)].sample(n=500, random_state=44, replace=False)
-race_sample_1['Target Generic'] = 'race'
+# Convert to a list
+generic_questions_list = generic_sample['Question'].tolist()
 
-# Exclude the sampled race questions from the remaining DataFrame
-remaining_df = remaining_df.drop(race_sample_1.index)
+# Export as JSON in the same Python-list format
+generic_output_path = os.path.join(output_dir, "genericqa.json")
+with open(generic_output_path, "w", encoding="utf-8") as f:
+    json.dump(generic_questions_list, f, indent=2, ensure_ascii=False)
 
-# Sample the second set of race questions from the remaining DataFrame
-race_sample_2 = remaining_df[remaining_df['Target Group'].isin(race_categories)].sample(n=500, random_state=45, replace=False)
-race_sample_2['Target Generic'] = 'race'
-
-
-race_sample_1.iloc[:, 2].to_json('./data/biaslens/new/race.json', orient='values')
-gender_sample_1.iloc[:, 2].to_json('./data/biaslens/new/gender.json', orient='values')
-
-# Combine the sampled questions into a single DataFrame
-sampled_questions = pd.concat([race_sample_2, gender_sample_2], ignore_index=True)
-sampled_questions = sampled_questions.drop(columns=['Role'])
-
-# Save the resulting DataFrame to a CSV file
-sampled_questions.to_csv('./data/biaslens/new/biaslens_annotation_sample_500.csv', index=False)
-print("Sampled questions saved to 'biaslens_annotation_sample_500.csv'.")
+print(f"Saved {generic_sample_size} random questions from the entire dataset to 'genericqa.json'.")

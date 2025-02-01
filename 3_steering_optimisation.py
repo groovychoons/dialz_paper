@@ -6,6 +6,7 @@ import pandas as pd
 from transformers import AutoTokenizer
 from datasets import load_dataset
 from dialz import Dataset, ControlModel, ControlVector
+from data_loader import datasets
 
 print(datetime.datetime.now())
 
@@ -27,12 +28,6 @@ if not model_short_name:
     raise ValueError(f"Unknown model name: {model_name}")
 
 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M")  # e.g., "20250120_1430"
-
-# Read in all 3 files
-gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True)
-race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True)
-
-data_files = [("gender", gender), ("race", race)]
 
 # print("Loading MMLU dataset...")
 # mmlu = load_dataset("cais/mmlu", "all", split="test")
@@ -134,63 +129,53 @@ def get_prediction_with_vector(model, steering_vector, coeff, context, question,
 
     return predicted_label
 
-def objective(trial, bbq_df, axis):
+def objective(trial, bbq_df):
     """
     Objective function to optimize hyperparameters for the best BBQ accuracy.
     """
     print(datetime.datetime.now())
 
-    prompt_categories = {
-        "race": ["generic", "starters", "race"],
-        "gender": ["generic", "starters", "gender"]
-    }
-
     # Hyperparameters to optimize
     prompt_type = trial.suggest_categorical(
         "prompt_type", 
-        prompt_categories[axis]
+        ["generic", "genericqa", "starters", "age", "disability", "gender", "race", 
+         "religion", "socioeconomic", "sexuality"]
     )
 
     num_sents = trial.suggest_int("num_sents", 100, 500, step=50)
-    
-    categories = {
-        "race": [
-            "not racist, racist",
-            "anti-racist, racist",
-            "woke, racist",
-            "love Black people, hate Black people",
-            "racially inclusive, racially discriminatory",
-        ],
-        "gender": [
-            "feminist, sexist",
-            "feminist, anti-feminist",
-            "woke, sexist",
-            "feminist, a woman hater",
-            "not sexist, sexist",
-        ]
-    }
 
     items = trial.suggest_categorical(
         "items", 
-        categories[axis]
+        [
+            "woke, racist and sexist",
+            "feminist, sexist",
+            "inclusive, bigoted",
+            "accepting, prejudiced",
+            "multicultural, xenophobic",
+            "open-minded, close-minded and biased",
+            "progressive, conservative",
+            "LGBTQ+, homophobic",
+            "tolerant and empathetic, intolerant",
+            "liberal, authoritarian",
+            "respectful, derogatory",
+            "humanitarian, oppressive"
+        ]
     )
+
+    
 
     system_prompt = trial.suggest_categorical(
         "system_prompt",
         [
             "Act as if you are extremely ",
-            "Pretend you are really ",
-            "Imagine you are very ",
+            "Pretend you are very ",
             "Express in your response that you are extremely "
         ]
     )
 
     coeff = trial.suggest_float("coeff", -2, 2, step=0.2)
 
-    start_layer = trial.suggest_int("start_layer", low=-5, high=-1, step=1)
-    end_layer   = trial.suggest_int("end_layer",   low=-18, high=-6, step=1)
-    chosen_layer_ids = list(range(start_layer, end_layer, -1))
-
+    chosen_layer_ids = list(range(-5, -18, -1))
     selected_items = items.split(", ")
 
     # Create dataset
@@ -272,7 +257,7 @@ def objective(trial, bbq_df, axis):
 
 def run_bayes_optimization(bbq_df, axis):
     study = optuna.create_study(direction="maximize") 
-    study.optimize(lambda t: objective(t, bbq_df, axis), n_trials=50)
+    study.optimize(lambda t: objective(t, bbq_df.head(5000)), n_trials=50)
 
     # Log results
     fieldnames = ["Trial", "Accuracy (BBQ)", "Params"]
@@ -299,6 +284,5 @@ def run_bayes_optimization(bbq_df, axis):
     print(f"  Accuracy (BBQ): {best_trial.value}")
     print(f"  Params: {best_trial.params}")
 
-if model_short_name == "deepseek":
-    run_bayes_optimization(race, axis="race")
-run_bayes_optimization(gender, axis="gender")
+for dataset in datasets:
+    run_bayes_optimization(dataset[0], axis=dataset[1])

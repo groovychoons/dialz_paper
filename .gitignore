@@ -1,3 +1,4 @@
 .env
 /results_copy
 /logs
+**/__pycache__
