@@ -2,6 +2,7 @@ import datetime
 import pandas as pd
 from transformers import AutoTokenizer
 from datasets import load_dataset
+from data_loader import datasets, bbq_full
 from dialz import Dataset, ControlModel, ControlVector
 
 
@@ -16,20 +17,8 @@ MODEL_SHORT_NAMES = {
 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M")
 
 # Read the best trials CSV (update path as needed)
-BEST_TRIALS_PATH = "./results/best_trials.csv"
+BEST_TRIALS_PATH = "./results/new_best_trials.csv"
 best_trials_df = pd.read_csv(BEST_TRIALS_PATH)
-
-# Load your BBQ data subsets
-gender_df = pd.read_json("./data/bbq/BBQ_Gender_identity.jsonl", lines=True)
-race_df = pd.read_json("./data/bbq/BBQ_Race_ethnicity.jsonl", lines=True)
-racexgender_df = pd.read_json("./data/bbq/BBQ_Race_x_gender.jsonl", lines=True)
-
-# We’ll evaluate on these data splits
-data_files = [
-    ("gender", gender_df),
-    ("race", race_df),
-    ("racexgender", racexgender_df),
-]
 
 # Load MMLU
 mmlu = load_dataset("cais/mmlu", "all", split="test")
@@ -187,91 +176,16 @@ def evaluate_on_mmlu(model, vector, coeff, tokenizer, mmlu_df):
 results = []
 
 # Decide whether or not we are merging
-merged = True  # or False
+merged_vectors = True # or False
+merged_datasets = True
+all_axes = True
 
-if merged:
-    # Group the best_trials_df by model
-    grouped_df = best_trials_df.groupby("model")
+if merged_vectors:
+    print("Merging vectors")
+    vector = None
+    avg_coeff = 0.0
+    # dataset = Dataset()
 
-    for model_short, group in grouped_df:
-        # We assume the group has exactly one race row and one gender row
-        race_row = group[group["axis"] == "race"].iloc[0]
-        gender_row = group[group["axis"] == "gender"].iloc[0]
-
-        # Unpack parameters you want to keep; for simplicity, we take them from the race row.
-        model_name    = MODEL_SHORT_NAMES.get(model_short)
-        start_layer   = int(race_row["start_layer"])
-        end_layer     = int(race_row["end_layer"])
-        # Or choose from the gender row or do something fancy like min/max if needed.
-
-        # We'll compute an average coefficient from race_row and gender_row:
-        merged_coeff = 0.5 * (float(race_row["coeff"]) + float(gender_row["coeff"]))
-
-        print(f"\n=== Merged evaluation for model: {model_name} ===")
-        print(f"Using mean coeff: {merged_coeff}")
-
-        # 1) Create and train the race vector
-        race_dataset = Dataset.create_dataset(
-            model_name   = model_name,
-            items        = [x.strip() for x in race_row["items"].split(",")],
-            prompt_type  = race_row["prompt_type"],
-            num_sents    = int(race_row["num_sents"]),
-            system_role  = race_row["system_prompt"]
-        )
-
-        race_layers      = list(range(start_layer, end_layer, -1))
-        race_model       = ControlModel(model_name, race_layers)
-        race_tokenizer   = AutoTokenizer.from_pretrained(model_name)
-        race_tokenizer.pad_token_id = race_tokenizer.eos_token_id
-        race_vector      = ControlVector.train(race_model, race_dataset)
-
-        # 2) Create and train the gender vector
-        gender_dataset = Dataset.create_dataset(
-            model_name   = model_name,
-            items        = [x.strip() for x in gender_row["items"].split(",")],
-            prompt_type  = gender_row["prompt_type"],
-            num_sents    = int(gender_row["num_sents"]),
-            system_role  = gender_row["system_prompt"]
-        )
-
-        gender_start_layer   = int(gender_row["start_layer"])
-        gender_end_layer     = int(gender_row["end_layer"])
-
-        gender_layers    = list(range(gender_start_layer, gender_end_layer, -1))
-        gender_model     = ControlModel(model_name, gender_layers)
-        gender_tokenizer = AutoTokenizer.from_pretrained(model_name)
-        gender_tokenizer.pad_token_id = gender_tokenizer.eos_token_id
-        gender_vector    = ControlVector.train(gender_model, gender_dataset)
-
-        # 3) Merge the two vectors by taking the mean
-        merged_vector = (race_vector + gender_vector) / 2.0
-
-        # 4) Evaluate on each dataset with the Merged Vector
-        #    Re-use your existing evaluate_on_bbq / evaluate_on_mmlu calls
-        bbq_race_acc        = evaluate_on_bbq(race_model,   merged_vector, merged_coeff, race_tokenizer, race_df)
-        bbq_gender_acc      = evaluate_on_bbq(race_model,   merged_vector, merged_coeff, race_tokenizer, gender_df)
-        bbq_racexgender_acc = evaluate_on_bbq(race_model,   merged_vector, merged_coeff, race_tokenizer, racexgender_df)
-        mmlu_acc            = evaluate_on_mmlu(race_model,  merged_vector, merged_coeff, race_tokenizer, mmlu_df)
-
-        # 5) Collect results
-        results.append({
-            "model":               model_name,
-            "axis":                "merged",
-            "prompt_type":         f"merged-{race_row['prompt_type']}/{gender_row['prompt_type']}",
-            "num_sents":           f"merged-{race_row['num_sents']}/{gender_row['num_sents']}",
-            "items":               f"{race_row['items']} + {gender_row['items']}",
-            "system_prompt":       f"{race_row['system_prompt']} + {gender_row['system_prompt']}",
-            "coeff":               merged_coeff,
-            "start_layer":         start_layer,
-            "end_layer":           end_layer,
-            "bbq_race_acc":        bbq_race_acc,
-            "bbq_gender_acc":      bbq_gender_acc,
-            "bbq_racexgender_acc": bbq_racexgender_acc,
-            "mmlu_acc":            mmlu_acc,
-        })
-
-else:
-    # Original loop (if you just want to benchmark each single best trial)
     for _, trial_row in best_trials_df.iterrows():
         model_short     = trial_row["model"]
         model_name      = MODEL_SHORT_NAMES.get(model_short)
@@ -282,15 +196,147 @@ else:
         items_str       = trial_row["items"]
         system_prompt   = trial_row["system_prompt"]
         coeff           = float(trial_row["coeff"])
-        start_layer     = int(trial_row["start_layer"])
-        end_layer       = int(trial_row["end_layer"])
 
         items_list = [x.strip() for x in items_str.split(",")]
 
         print(f"\n=== Evaluating Best Trial ===")
         print(f"Model: {model_name}, Axis: {axis}, prompt_type: {prompt_type}, "
               f"num_sents: {num_sents}, items: {items_list}, system_prompt: {system_prompt}, "
-              f"coeff: {coeff}, start_layer: {start_layer}, end_layer: {end_layer}")
+              f"coeff: {coeff}")
+
+        # Create dataset
+        axis_dataset = Dataset.create_dataset(
+            model_name   = model_name,
+            items        = items_list,
+            prompt_type  = prompt_type,
+            num_sents    = num_sents,
+            system_role  = system_prompt
+        )
+
+        # dataset.entries = dataset.entries + axis_dataset.entries
+        avg_coeff += coeff
+
+        chosen_layer_ids = list(range(-5, -18, -1))
+
+        # Load model
+        model = ControlModel(model_name, chosen_layer_ids)
+
+        # Train vector
+        axis_vector = ControlVector.train(model, axis_dataset)
+        vector = vector + axis_vector if vector is not None else axis_vector
+        
+    vector = vector / len(best_trials_df)
+    avg_coeff = avg_coeff / len(best_trials_df)
+    print("Avg coeff:", avg_coeff)
+    print(vector)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+
+    bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
+    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
+
+    for axis_df, label in datasets:
+        bbq_axis_acc        = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, axis_df)
+        results.append({
+            "type":                "merged",
+            "model":               model_name,
+            "axis":                label,
+            "coeff":               avg_coeff,
+            "bbq_axis_acc":        round(bbq_axis_acc,3),
+            "bbq_acc":             round(bbq_acc,3),
+            "mmlu_acc":            round(mmlu_acc,3),
+        })
+
+    results_df = pd.DataFrame(results)
+    output_csv = f"./logs/{timestamp}_merged_vectors_evaluation.csv"
+    results_df.to_csv(output_csv, index=False)
+
+results = []
+
+if merged_datasets:
+    avg_coeff = 0.0
+    dataset = Dataset()
+
+    for _, trial_row in best_trials_df.iterrows():
+        model_short     = trial_row["model"]
+        model_name      = MODEL_SHORT_NAMES.get(model_short)
+
+        axis            = trial_row["axis"]
+        prompt_type     = trial_row["prompt_type"]
+        num_sents       = int(trial_row["num_sents"])
+        items_str       = trial_row["items"]
+        system_prompt   = trial_row["system_prompt"]
+        coeff           = float(trial_row["coeff"])
+
+        items_list = [x.strip() for x in items_str.split(",")]
+
+        print(f"\n=== Evaluating Best Trial ===")
+        print(f"Model: {model_name}, Axis: {axis}, prompt_type: {prompt_type}, "
+              f"num_sents: {num_sents}, items: {items_list}, system_prompt: {system_prompt}, "
+              f"coeff: {coeff}")
+
+        # Create dataset
+        axis_dataset = Dataset.create_dataset(
+            model_name   = model_name,
+            items        = items_list,
+            prompt_type  = prompt_type,
+            num_sents    = num_sents,
+            system_role  = system_prompt
+        )
+
+        dataset.entries = dataset.entries + axis_dataset.entries
+        avg_coeff += coeff
+
+    chosen_layer_ids = list(range(-5, -18, -1))
+    model = ControlModel(model_name, chosen_layer_ids)
+    vector = ControlVector.train(model, dataset)
+    
+    avg_coeff = avg_coeff / len(best_trials_df)
+    print("Avg coeff:", avg_coeff)
+    print("Num entries:", len(dataset.entries))
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+
+    bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
+    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
+
+    results.append({
+        "type":                "merged",
+        "model":               model_name,
+        "axis":                label,
+        "coeff":               avg_coeff,
+        "bbq_axis_acc":        round(bbq_axis_acc,3),
+        "bbq_acc":             round(bbq_acc,3),
+        "mmlu_acc":            round(mmlu_acc,3),
+    })
+
+    results_df = pd.DataFrame(results)
+    output_csv = f"./logs/{timestamp}_merged_datasets_evaluation.csv"
+    results_df.to_csv(output_csv, index=False)
+
+results = []
+
+if all_axes == True:
+    # For every single steering vector, calculate the accuracy
+    for _, trial_row in best_trials_df.iterrows():
+        model_short     = trial_row["model"]
+        model_name      = MODEL_SHORT_NAMES.get(model_short)
+
+        axis            = trial_row["axis"]
+        prompt_type     = trial_row["prompt_type"]
+        num_sents       = int(trial_row["num_sents"])
+        items_str       = trial_row["items"]
+        system_prompt   = trial_row["system_prompt"]
+        coeff           = float(trial_row["coeff"])
+
+        items_list = [x.strip() for x in items_str.split(",")]
+
+        print(f"\n=== Evaluating Best Trial ===")
+        print(f"Model: {model_name}, Axis: {axis}, prompt_type: {prompt_type}, "
+              f"num_sents: {num_sents}, items: {items_list}, system_prompt: {system_prompt}, "
+              f"coeff: {coeff}")
 
         # Create dataset
         dataset = Dataset.create_dataset(
@@ -301,7 +347,7 @@ else:
             system_role  = system_prompt
         )
 
-        chosen_layer_ids = list(range(start_layer, end_layer, -1))
+        chosen_layer_ids = list(range(-5, -18, -1))
 
         # Load model
         model = ControlModel(model_name, chosen_layer_ids)
@@ -312,9 +358,10 @@ else:
         vector = ControlVector.train(model, dataset)
 
         # Evaluate
-        bbq_race_acc        = evaluate_on_bbq(model, vector, coeff, tokenizer, race_df)
-        bbq_gender_acc      = evaluate_on_bbq(model, vector, coeff, tokenizer, gender_df)
-        bbq_racexgender_acc = evaluate_on_bbq(model, vector, coeff, tokenizer, racexgender_df)
+        axis_df = next((df for df, label in datasets if label == axis), None)
+
+        bbq_axis_acc        = evaluate_on_bbq(model, vector, coeff, tokenizer, axis_df)
+        bbq_acc             = evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_full)
         mmlu_acc            = evaluate_on_mmlu(model, vector, coeff, tokenizer, mmlu_df)
 
         results.append({
@@ -325,12 +372,9 @@ else:
             "items":               items_str,
             "system_prompt":       system_prompt,
             "coeff":               coeff,
-            "start_layer":         start_layer,
-            "end_layer":           end_layer,
-            "bbq_race_acc":        bbq_race_acc,
-            "bbq_gender_acc":      bbq_gender_acc,
-            "bbq_racexgender_acc": bbq_racexgender_acc,
-            "mmlu_acc":            mmlu_acc,
+            "bbq_axis_acc":        round(bbq_axis_acc,3),
+            "bbq_acc":             round(bbq_acc,3),
+            "mmlu_acc":            round(mmlu_acc,3),
         })
 
 ################################################################################

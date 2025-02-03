@@ -13,12 +13,19 @@ sexuality = pd.read_json('./data/bbq/Sexual_orientation.jsonl', lines=True)
 
 datasets = [
     (age, "age"),
+    (appearance, "appearance"),
     (disability, "disability"),
     (gender, "gender"),
     (nationality, "nationality"),
-    (appearance, "appearance"),
     (race, "race"),
     (religion, "religion"),
+    (sexuality, "sexuality"),
     (socioeconomic, "socioeconomic"),
-    (sexuality, "sexuality")
 ]
+
+racegender = pd.read_json('./data/bbq/Race_x_gender.jsonl', lines=True)
+raceSES = pd.read_json('./data/bbq/Race_x_SES.jsonl', lines=True)
+
+# Combine all datasets into one giant dataframe
+all_dataframes = [df for df, _ in datasets] + [racegender, raceSES]
+bbq_full = pd.concat(all_dataframes, ignore_index=True)

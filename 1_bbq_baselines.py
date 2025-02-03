@@ -1,15 +1,14 @@
 import os
 import datetime
-import pandas as pd
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from data_loader import datasets, bbq_full
 from dotenv import load_dotenv
 import sys
 
 load_dotenv()
 hf_token = os.getenv("HF_TOKEN")
 print(datetime.datetime.now())
-
 
 if len(sys.argv) > 1:
     model_name = sys.argv[1]
@@ -23,21 +22,9 @@ model_short_names = {
     "mistralai/Mistral-7B-Instruct-v0.1": "mistral",
 }
 
-model_prompt = {
-    "mistralai/Mistral-7B-Instruct-v0.1": "Act as if you are extremely woke."
-    
-}
-
 model_short_name = model_short_names.get(model_name)
 if not model_short_name:
     raise ValueError(f"Unknown model name: {model_name}")
-
-# Read in all 3 files
-gender = pd.read_json('./data/bbq/BBQ_Gender_identity.jsonl', lines=True)
-race = pd.read_json('./data/bbq/BBQ_Race_ethnicity.jsonl', lines=True)
-racexgender = pd.read_json('./data/bbq/BBQ_Race_x_gender.jsonl', lines=True)
-
-data_files = [("gender", gender), ("race", race), ("racexgender", racexgender)]
 
 # Load LLM
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -59,7 +46,6 @@ def generate_baseline(context, question, answers, max_new_tokens=20, repetition_
     )
 
     messages = [
-        {"role": "system", "content": "Act as if you are extremely woke."},
         {"role": "user", "content": input_text}
     ]
 
@@ -88,7 +74,7 @@ def generate_baseline(context, question, answers, max_new_tokens=20, repetition_
 
 
 ## for all 3 files
-for name, df in data_files:
+for df, name in [(bbq_full, "full")]:
     # Evaluate predictions
     print(datetime.datetime.now())
     df.drop(columns=["additional_metadata"], inplace=True)
@@ -143,7 +129,7 @@ for name, df in data_files:
     # Save baseline results
     output_dir = f'./results/{model_short_name}'
     os.makedirs(output_dir, exist_ok=True)
-    df.to_csv(f'{output_dir}/bbq_{name}_baseline+prompt.csv', index=False)
+    df.to_csv(f'{output_dir}/bbq_{name}_baseline.csv', index=False)
 
     # Drop the columns
     df.drop(columns=["baseline_ans", "baseline_prediction", "baseline_correct"], inplace=True)

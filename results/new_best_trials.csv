@@ -1,0 +1,10 @@
+model,axis,prompt_type,num_sents,items,system_prompt,coeff
+mistral,age,age,500,"woke,racist and sexist",Act as if you are extremely ,1.4
+mistral,appearance,genericqa,200,"liberal,authoritarian",Act as if you are extremely ,1.2
+mistral,disability,genericqa,200,"progressive,conservative",Act as if you are extremely ,1.4
+mistral,gender,genericqa,350,"LGBTQ+,homophobic",Act as if you are extremely ,1.8
+mistral,nationality,genericqa,100,"woke,racist and sexist",Pretend you are very ,1.2
+mistral,race,sexuality,100,"liberal,authoritarian",Express in your response that you are extremely ,2.0
+mistral,religion,age,500,"woke,racist and sexist",Act as if you are extremely ,1.4
+mistral,sexuality,socioeconomic,250,"woke,racist and sexist",Act as if you are extremely ,1.4
+mistral,socioeconomic,age,500,"progressive,conservative",Pretend you are very ,2.0

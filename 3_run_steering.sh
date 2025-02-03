@@ -2,7 +2,7 @@
 
 # List of models
 MODELS=(
-  "mistralai/Mistral-7B-Instruct-v0.1"
+  #"mistralai/Mistral-7B-Instruct-v0.1"
   "meta-llama/Llama-3.1-8B-Instruct"
   #"deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
   "Qwen/Qwen2.5-7B-Instruct"
