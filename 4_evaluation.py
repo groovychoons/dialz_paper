@@ -21,7 +21,7 @@ print("New results:")
 models = ['mistral', 'qwen', 'llama']
 conditions = ['race', 'gender', 'racexgender']
 results = {}
-
+datasets.append(('all', 'full'))
 for model in models:
     results[model] = {}
     for df, name in datasets:
