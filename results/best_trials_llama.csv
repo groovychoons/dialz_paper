@@ -1,0 +1,10 @@
+model,axis,prompt_type,num_sents,items,system_prompt,coeff
+llama,age,generic,400,"conservative,progressive",Pretend you are very,1.6
+llama,appearance,socioeconomic,200,"multicultural,xenophobic",Express in your response that you are extremely ,0.8
+llama,disability,socioeconomic,350,"feminist,sexist",Express in your response that you are extremely ,1.4
+llama,gender,religion,400,"close-minded and biased,open-minded",Pretend you are very ,1.8
+llama,nationality,religion,150,"LGBTQ+,homophobic",Act as if you are extremely ,2.0
+llama,race,genericqa,250,"close-minded and biased,open-minded",Pretend you are very ,0.6
+llama,religion,disability,350,"open-minded,close-minded and biased",Act as if you are extremely ,1.2
+llama,sexuality,disability,350,"woke,racist and sexist",Act as if you are extremely ,1.4
+llama,socioeconomic,socioeconomic,150,"feminist,sexist",Express in your response that you are extremely ,1.8

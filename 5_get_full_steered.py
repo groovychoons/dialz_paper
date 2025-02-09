@@ -17,7 +17,7 @@ MODEL_SHORT_NAMES = {
 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M")
 
 # Read the best trials CSV (update path as needed)
-BEST_TRIALS_PATH = "./results/new_best_trials.csv"
+BEST_TRIALS_PATH = "./results/best_trials_llama.csv"
 best_trials_df = pd.read_csv(BEST_TRIALS_PATH)
 
 # Load MMLU
@@ -131,6 +131,7 @@ def evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_df):
     """
     Evaluate accuracy on a given BBQ subset.
     """
+    bbq_results = []
     total = len(bbq_df)
     correct = 0
     for idx, row in bbq_df.iterrows():
@@ -147,6 +148,22 @@ def evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_df):
         )
         if pred == label:
             correct += 1
+
+        bbq_results.append({
+            "example_id": row["example_id"],
+            "category": row["category"],
+            "context": context,
+            "question": question,
+            "answers": answers,
+            "label": label,
+            "prediction": pred,
+            "correct": pred == label
+        })
+
+    timestamp2 = datetime.datetime.now().strftime("%Y%m%d-%H%M")
+
+    bbq_results_df = pd.DataFrame(bbq_results)
+    bbq_results_df.to_csv(f"./logs/{timestamp2}_bbq_results.csv", index=False)
     return correct / total if total > 0 else 0.0
 
 def evaluate_on_mmlu(model, vector, coeff, tokenizer, mmlu_df):
@@ -187,6 +204,7 @@ if merged_vectors:
     # dataset = Dataset()
 
     for _, trial_row in best_trials_df.iterrows():
+
         model_short     = trial_row["model"]
         model_name      = MODEL_SHORT_NAMES.get(model_short)
 
@@ -217,40 +235,39 @@ if merged_vectors:
         avg_coeff += coeff
 
         chosen_layer_ids = list(range(-5, -18, -1))
-
-        # Load model
         model = ControlModel(model_name, chosen_layer_ids)
 
         # Train vector
         axis_vector = ControlVector.train(model, axis_dataset)
         vector = vector + axis_vector if vector is not None else axis_vector
-        
+        del model
+        del axis_vector
+    
     vector = vector / len(best_trials_df)
     avg_coeff = avg_coeff / len(best_trials_df)
     print("Avg coeff:", avg_coeff)
     print(vector)
 
+    model = ControlModel(model_name, chosen_layer_ids)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
+    #bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
+    bbq_acc = 0
     mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
 
-    for axis_df, label in datasets:
-        bbq_axis_acc        = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, axis_df)
-        results.append({
-            "type":                "merged",
-            "model":               model_name,
-            "axis":                label,
-            "coeff":               avg_coeff,
-            "bbq_axis_acc":        round(bbq_axis_acc,3),
-            "bbq_acc":             round(bbq_acc,3),
-            "mmlu_acc":            round(mmlu_acc,3),
-        })
+    results.append({
+        "type":                "merged",
+        "model":               model_name,
+        "coeff":               avg_coeff,
+        "bbq_acc":             round(bbq_acc,3),
+        "mmlu_acc":            round(mmlu_acc,3),
+    })
 
     results_df = pd.DataFrame(results)
     output_csv = f"./logs/{timestamp}_merged_vectors_evaluation.csv"
     results_df.to_csv(output_csv, index=False)
+    del model
 
 results = []
 
@@ -287,6 +304,7 @@ if merged_datasets:
 
         dataset.entries = dataset.entries + axis_dataset.entries
         avg_coeff += coeff
+        del axis_dataset
 
     chosen_layer_ids = list(range(-5, -18, -1))
     model = ControlModel(model_name, chosen_layer_ids)
@@ -305,12 +323,11 @@ if merged_datasets:
     results.append({
         "type":                "merged",
         "model":               model_name,
-        "axis":                label,
         "coeff":               avg_coeff,
-        "bbq_axis_acc":        round(bbq_axis_acc,3),
         "bbq_acc":             round(bbq_acc,3),
         "mmlu_acc":            round(mmlu_acc,3),
     })
+    print(results)
 
     results_df = pd.DataFrame(results)
     output_csv = f"./logs/{timestamp}_merged_datasets_evaluation.csv"

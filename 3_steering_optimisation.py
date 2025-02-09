@@ -2,9 +2,10 @@ import sys
 import csv
 import datetime
 import optuna
-import pandas as pd
+import torch
 from transformers import AutoTokenizer
-from datasets import load_dataset
+# import pandas as pd
+# from datasets import load_dataset
 from dialz import Dataset, ControlModel, ControlVector
 from data_loader import datasets
 
@@ -18,6 +19,7 @@ else:
 # Map model names to short names
 model_short_names = {
     "Qwen/Qwen2.5-7B-Instruct": "qwen",
+    "Qwen/Qwen2.5-0.5B-Instruct": "qwensmall",
     "meta-llama/Llama-3.1-8B-Instruct": "llama",
     "mistralai/Mistral-7B-Instruct-v0.1": "mistral",
     "deepseek-ai/DeepSeek-R1-Distill-Llama-8B": "deepseek"
@@ -192,6 +194,7 @@ def objective(trial, bbq_df):
             model_name, 
             chosen_layer_ids
         )
+    model.half() 
     
     vector = ControlVector.train(
             model, 
@@ -285,4 +288,7 @@ def run_bayes_optimization(bbq_df, axis):
     print(f"  Params: {best_trial.params}")
 
 for dataset in datasets:
-    run_bayes_optimization(dataset[0], axis=dataset[1])
+    if model_name == "Qwen/Qwen2.5-7B-Instruct" and dataset[1] in ["age", "appearance", "disability"]:
+        pass
+    else:
+        run_bayes_optimization(dataset[0], axis=dataset[1])
