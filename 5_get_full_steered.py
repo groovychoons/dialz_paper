@@ -17,7 +17,7 @@ MODEL_SHORT_NAMES = {
 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M")
 
 # Read the best trials CSV (update path as needed)
-BEST_TRIALS_PATH = "./results/best_trials_llama.csv"
+BEST_TRIALS_PATH = "./results/best_trials_qwen.csv"
 best_trials_df = pd.read_csv(BEST_TRIALS_PATH)
 
 # Load MMLU
