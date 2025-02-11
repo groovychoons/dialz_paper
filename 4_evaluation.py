@@ -12,11 +12,11 @@ for model in models:
 
 # Print the results in a table format
 for model in models:
-    print(f"Results for {model}: {results[model]}")
+    print(f"MMLU Baseline({model}): {results[model]}")
     print()
 
 
-print("New results:")
+print("BBQ Baselines:")
 
 category_results = {}
 
@@ -29,10 +29,14 @@ for model in ['mistral', 'llama']:
         category_df = df[df['category'] == category]
         avg_result = round(category_df['baseline_correct'].sum() / len(category_df), 3) * 100
         category_results[model][category] = avg_result
+    total_correct = df['baseline_correct'].sum()
+    total_len = len(df)
+    category_results[model]['total'] = round(total_correct / total_len, 3) * 100
 
 category_df = pd.DataFrame(category_results)
 print(category_df)
 
+print()
 
 print("SVE results:")
 
@@ -51,10 +55,19 @@ for model in ['llama']:
 category_df = pd.DataFrame(category_results)
 print(category_df)
 
-print("Full amount of correct / len for SVE baseline file:")
+print()
 
-for model in ['llama']:
-    df = pd.read_csv(f'./results/{model}/bbq_full_baseline.csv')
-    total_correct = df['baseline_correct'].sum()
-    total_len = len(df)
-    print(f"Model: {model}, Total Correct: {total_correct}, Total Length: {total_len}, Ratio: {round(total_correct / total_len, 3) * 100}%")
+print("Average ISV results:")
+
+results = {}
+
+for model in ['mistral','llama']:
+    results[model] = {}
+    df = pd.read_csv(f'./results/{model}/isv_full.csv')
+    bbq_avg = round(df['bbq_acc'].sum() / len(df), 3) * 100
+    mmlu_avg = round(df['mmlu_acc'].sum() / len(df), 3) * 100
+    results[model]['bbq_avg'] = bbq_avg
+    results[model]['mmlu_avg'] = mmlu_avg
+
+results_df = pd.DataFrame(results)
+print(results_df)

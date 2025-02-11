@@ -1,0 +1,10 @@
+model,axis,prompt_type,num_sents,items,system_prompt,coeff
+qwen,age,disability,450,"feminist,sexist",Pretend you are very ,1.6
+qwen,appearance,age,100,"humanitarian,oppressive",Pretend you are very ,1.4
+qwen,disability,genericqa,250,"feminist,sexist",Pretend you are very ,1.8
+qwen,gender,socioeconomic,500,"humanitarian,oppressive",Pretend you are very ,2.0
+qwen,nationality,generic,400,"liberal,authoritarian",Pretend you are very ,2.0
+qwen,race,socioeconomic,100,"humanitarian,oppressive",Express in your response that you are extremely ,1.6
+qwen,religion,genericqa,300,"humanitarian,oppressive",Pretend you are very ,1.8
+qwen,sexuality,gender,350,"feminist,sexist",Express in your response that you are extremely ,1.8
+qwen,socioeconomic,age,200,"tolerant and empathetic,intolerant",Act as if you are extremely ,2.0
