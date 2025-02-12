@@ -194,8 +194,8 @@ results = []
 
 # Decide whether or not we are merging
 merged_vectors = True # or False
-merged_datasets = True
-all_axes = True
+merged_datasets = False
+all_axes = False
 
 if merged_vectors:
     print("Merging vectors")
@@ -254,7 +254,7 @@ if merged_vectors:
 
     bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
 #    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
-
+    mmlu_acc = 0
     results.append({
         "type":                "merged",
         "model":               model_name,
