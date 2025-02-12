@@ -252,9 +252,8 @@ if merged_vectors:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    #bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
-    bbq_acc = 0
-    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
+    bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
+#    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
 
     results.append({
         "type":                "merged",
