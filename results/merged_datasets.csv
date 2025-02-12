@@ -1,0 +1,4 @@
+type,model,coeff,bbq_acc,mmlu_acc
+merged,mistralai/Mistral-7B-Instruct-v0.1,1.53,0.405,0.305
+merged,meta-llama/Llama-3.1-8B-Instruct,1.4,0.695,0.427
+merged,Qwen/Qwen2.5-7B-Instruct,1.78,0.858,0.67

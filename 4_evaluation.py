@@ -1,6 +1,6 @@
 import pandas as pd
 from data_loader import datasets
-models = ['mistral', 'qwen', 'llama']
+models = ['mistral', 'llama', 'qwen']
 results = {}
 
 for model in models:
@@ -20,7 +20,7 @@ print("BBQ Baselines:")
 
 category_results = {}
 
-for model in ['mistral', 'llama']:
+for model in ['mistral', 'llama', 'qwen']:
     category_results[model] = {}
     df = pd.read_csv(f'./results/{model}/bbq_full_baseline.csv')
     categories = df['category'].unique()
@@ -61,7 +61,7 @@ print("Average ISV results:")
 
 results = {}
 
-for model in ['mistral','llama']:
+for model in ['mistral','llama','qwen']:
     results[model] = {}
     df = pd.read_csv(f'./results/{model}/isv_full.csv')
     bbq_avg = round(df['bbq_acc'].sum() / len(df), 3) * 100
