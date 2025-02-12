@@ -247,14 +247,16 @@ if merged_vectors:
     avg_coeff = avg_coeff / len(best_trials_df)
     print("Avg coeff:", avg_coeff)
     print(vector)
+    if model_name == "Qwen/Qwen2.5-7B-Instruct":
+        avg_coeff = 2.0
 
     model = ControlModel(model_name, chosen_layer_ids)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
     bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
-#    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
-    mmlu_acc = 0
+    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
+
     results.append({
         "type":                "merged",
         "model":               model_name,

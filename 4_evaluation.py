@@ -42,7 +42,7 @@ print("SVE results:")
 
 category_results = {}
 
-for model in ['llama']:
+for model in ['llama', 'qwen']:
     category_results[model] = {}
     df = pd.read_csv(f'./results/{model}/bbq_full_sve.csv')
     categories = df['category'].unique()
@@ -51,6 +51,10 @@ for model in ['llama']:
         category_df = df[df['category'] == category]
         avg_result = round(category_df['correct'].sum() / len(category_df), 3) * 100
         category_results[model][category] = avg_result
+    total_correct = df['correct'].sum()
+    total_len = len(df)
+    category_results[model]['total'] = round(total_correct / total_len, 3) * 100
+
 
 category_df = pd.DataFrame(category_results)
 print(category_df)
