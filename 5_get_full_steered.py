@@ -17,7 +17,7 @@ MODEL_SHORT_NAMES = {
 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M")
 
 # Read the best trials CSV (update path as needed)
-BEST_TRIALS_PATH = "./results/best_trials_qwen.csv"
+BEST_TRIALS_PATH = "./results/best_trials_all.csv"
 best_trials_df = pd.read_csv(BEST_TRIALS_PATH)
 
 # Load MMLU
@@ -198,77 +198,78 @@ merged_datasets = False
 all_axes = False
 
 if merged_vectors:
-    print("Merging vectors")
-    vector = None
-    avg_coeff = 0.0
-    # dataset = Dataset()
+    for model in best_trials_df["model"].unique():
+        print("Merging vectors")
+        vector = None
+        avg_coeff = 0.0
 
-    for _, trial_row in best_trials_df.iterrows():
+        for _, trial_row in best_trials_df[best_trials_df["model"] == model].iterrows():
 
-        model_short     = trial_row["model"]
-        model_name      = MODEL_SHORT_NAMES.get(model_short)
+            model_short     = trial_row["model"]
+            model_name      = MODEL_SHORT_NAMES.get(model_short)
 
-        axis            = trial_row["axis"]
-        prompt_type     = trial_row["prompt_type"]
-        num_sents       = int(trial_row["num_sents"])
-        items_str       = trial_row["items"]
-        system_prompt   = trial_row["system_prompt"]
-        coeff           = float(trial_row["coeff"])
+            axis            = trial_row["axis"]
+            prompt_type     = trial_row["prompt_type"]
+            num_sents       = int(trial_row["num_sents"])
+            items_str       = trial_row["items"]
+            system_prompt   = trial_row["system_prompt"]
+            coeff           = float(trial_row["coeff"])
 
-        items_list = [x.strip() for x in items_str.split(",")]
+            items_list = [x.strip() for x in items_str.split(",")]
 
-        print(f"\n=== Evaluating Best Trial ===")
-        print(f"Model: {model_name}, Axis: {axis}, prompt_type: {prompt_type}, "
-              f"num_sents: {num_sents}, items: {items_list}, system_prompt: {system_prompt}, "
-              f"coeff: {coeff}")
+            print(f"\n=== Evaluating Best Trial ===")
+            print(f"Model: {model_name}, Axis: {axis}, prompt_type: {prompt_type}, "
+                f"num_sents: {num_sents}, items: {items_list}, system_prompt: {system_prompt}, "
+                f"coeff: {coeff}")
 
-        # Create dataset
-        axis_dataset = Dataset.create_dataset(
-            model_name   = model_name,
-            items        = items_list,
-            prompt_type  = prompt_type,
-            num_sents    = num_sents,
-            system_role  = system_prompt
-        )
+            # Create dataset
+            axis_dataset = Dataset.create_dataset(
+                model_name   = model_name,
+                items        = items_list,
+                prompt_type  = prompt_type,
+                num_sents    = num_sents,
+                system_role  = system_prompt
+            )
 
-        # dataset.entries = dataset.entries + axis_dataset.entries
-        avg_coeff += coeff
+            # dataset.entries = dataset.entries + axis_dataset.entries
+            avg_coeff += coeff
 
-        chosen_layer_ids = list(range(-5, -18, -1))
+            chosen_layer_ids = list(range(-5, -18, -1))
+            model = ControlModel(model_name, chosen_layer_ids)
+
+            # Train vector
+            axis_vector = ControlVector.train(model, axis_dataset)
+            vector = vector + axis_vector if vector is not None else axis_vector
+            del model
+            del axis_vector
+        
+        vector = vector / len(best_trials_df)
+        avg_coeff = avg_coeff / len(best_trials_df)
+        print("Avg coeff:", avg_coeff)
+        print(vector)
+        if model_name == "Qwen/Qwen2.5-7B-Instruct":
+            avg_coeff = 2.0
+
         model = ControlModel(model_name, chosen_layer_ids)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        # Train vector
-        axis_vector = ControlVector.train(model, axis_dataset)
-        vector = vector + axis_vector if vector is not None else axis_vector
+        for coeff in range(-5, 5, 1):
+            bbq_acc             = evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_full)
+            mmlu_acc            = evaluate_on_mmlu(model, vector, coeff, tokenizer, mmlu_df)
+
+            results.append({
+                "type":                "merged",
+                "model":               model_name,
+                "coeff":               coeff,
+                "bbq_acc":             round(bbq_acc,3),
+                "mmlu_acc":            round(mmlu_acc,3),
+            })
+
+        results_df = pd.DataFrame(results)
+        output_csv = f"./logs/{timestamp}_merged_vectors_evaluation.csv"
+        results_df.to_csv(output_csv, index=False)
         del model
-        del axis_vector
-    
-    vector = vector / len(best_trials_df)
-    avg_coeff = avg_coeff / len(best_trials_df)
-    print("Avg coeff:", avg_coeff)
-    print(vector)
-    if model_name == "Qwen/Qwen2.5-7B-Instruct":
-        avg_coeff = 2.0
-
-    model = ControlModel(model_name, chosen_layer_ids)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-
-    bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_full)
-    mmlu_acc            = evaluate_on_mmlu(model, vector, avg_coeff, tokenizer, mmlu_df)
-
-    results.append({
-        "type":                "merged",
-        "model":               model_name,
-        "coeff":               avg_coeff,
-        "bbq_acc":             round(bbq_acc,3),
-        "mmlu_acc":            round(mmlu_acc,3),
-    })
-
-    results_df = pd.DataFrame(results)
-    output_csv = f"./logs/{timestamp}_merged_vectors_evaluation.csv"
-    results_df.to_csv(output_csv, index=False)
-    del model
 
 results = []
 

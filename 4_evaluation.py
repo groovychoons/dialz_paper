@@ -42,7 +42,7 @@ print("SVE results:")
 
 category_results = {}
 
-for model in ['llama', 'qwen']:
+for model in ['qwen']:
     category_results[model] = {}
     df = pd.read_csv(f'./results/{model}/bbq_full_sve.csv')
     categories = df['category'].unique()
@@ -72,6 +72,37 @@ for model in ['mistral','llama','qwen']:
     mmlu_avg = round(df['mmlu_acc'].sum() / len(df), 3) * 100
     results[model]['bbq_avg'] = bbq_avg
     results[model]['mmlu_avg'] = mmlu_avg
+
+results_df = pd.DataFrame(results)
+print(results_df)
+
+
+print("Unseen axes results:")
+
+results = {}
+for model in ['llama', 'qwen']:
+    results[model] = {}
+    df = pd.read_csv(f'./results/{model}/bbq_full_baseline.csv')
+    results[model]['baseline'] = {}
+    for category in ['Race_x_gender', 'Race_x_SES']:
+        category_df = df[df['category'] == category]
+        avg_result = round(category_df['baseline_correct'].sum() / len(category_df), 3) * 100
+        results[model]['baseline'][category] = round(avg_result,3)
+
+    for _, axis in datasets:
+        results[model][axis] = {}
+        df = pd.read_csv(f'./results/{model}/isv/{model}_{axis}.csv')
+        for category in ['Race_x_gender', 'Race_x_SES']:
+            category_df = df[df['category'] == category]
+            avg_result = round(category_df['correct'].sum() / len(category_df), 3) * 100
+            results[model][axis][category] = round(avg_result, 3)
+    
+    df = pd.read_csv(f'./results/{model}/bbq_full_sve.csv')
+    results[model]['sve'] = {}
+    for category in ['Race_x_gender', 'Race_x_SES']:
+        category_df = df[df['category'] == category]
+        avg_result = round(category_df['correct'].sum() / len(category_df), 3) * 100
+        results[model]['sve'][category] = round(avg_result,3)
 
 results_df = pd.DataFrame(results)
 print(results_df)
