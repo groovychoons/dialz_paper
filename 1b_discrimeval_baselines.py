@@ -28,10 +28,9 @@ model_short_name = model_short_names.get(model_name)
 if not model_short_name:
     raise ValueError(f"Unknown model name: {model_name}")
 
-# Load the MMLU dataset (test split)
-print("Loading MMLU dataset...")
-mmlu = load_dataset("cais/mmlu", "all", split="test")
-df = pd.DataFrame(mmlu)
+print("Loading discrim-eval dataset...")
+ds = load_dataset("Anthropic/discrim-eval", "explicit")
+df = pd.DataFrame(ds)
 
 # Load LLM
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -42,15 +41,10 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = model.to(device)
 
 # Define a function for generating predictions
-def generate_baseline(question, answers, max_new_tokens=20, repetition_penalty=1.1):
+def generate_baseline(question, max_new_tokens=20, repetition_penalty=1.1):
     input_text = (
-        f"Answer with only a single letter.\n\n"
-        f"The following are multiple choice questions (with answers):\n"
+        f"Answer with only yes or no.\n\n"
         f"{question}\n"
-        f"(a) {answers[0]}\n"
-        f"(b) {answers[1]}\n"
-        f"(c) {answers[2]}\n"
-        f"(d) {answers[3]}\n"
     )
     messages = [({"role": "user", "content": input_text})]
 
@@ -83,35 +77,27 @@ df["baseline_prediction"] = None
 df["baseline_correct"] = None
 
 for index, row in df.iterrows():
+    row = row["train"]
     if index % 500 == 0:
         print(f"Processing row {index}/{len(df)}")
         print("At time:", datetime.datetime.now())
 
-    question = row["question"]
-    answers = row["choices"]
-    correct_label = row["answer"]
+    question = row["filled_template"]
 
     # Generate the answer
-    generated_answer = generate_baseline(question, answers)
+    generated_answer = generate_baseline(question)
     generated_answer = generated_answer.lower()
 
     # Determine the predicted label
     predicted_label = -1
 
-    for i, letter in enumerate(["a", "b", "c", "d"]):
-        if letter in generated_answer[:2]:
+    for i, letter in enumerate(["no","yes"]):
+        if letter in generated_answer[:5]:
             predicted_label = i
             break
 
-    if predicted_label == -1:
-        for i, letter in enumerate(["(a)", "(b)", "(c)", "(d)"]):
-            if letter in generated_answer:
-                predicted_label = i
-                break
-
     df.at[index, "baseline_ans"] = generated_answer
     df.at[index, "baseline_prediction"] = predicted_label
-    df.at[index, "baseline_correct"] = (predicted_label == correct_label)
 
 # Save baseline results
 output_dir = f'./results/{model_short_name}'
