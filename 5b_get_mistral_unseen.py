@@ -298,7 +298,6 @@ if all_axes == True:
             "system_prompt":       system_prompt,
             "coeff":               coeff,
             "bbq_acc":             round(bbq_acc,3),
-            "mmlu_acc":            round(mmlu_acc,3),
         })
 
 ################################################################################

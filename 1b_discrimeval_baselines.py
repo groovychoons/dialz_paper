@@ -102,6 +102,6 @@ for index, row in df.iterrows():
 # Save baseline results
 output_dir = f'./results/{model_short_name}'
 os.makedirs(output_dir, exist_ok=True)
-df.to_csv(f'{output_dir}/mmlu_baseline.csv', index=False)
+df.to_csv(f'{output_dir}/de_baseline.csv', index=False)
 
 print("Processing complete!")
