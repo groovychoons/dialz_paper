@@ -80,7 +80,7 @@ print(results_df)
 print("Unseen axes results:")
 
 results = {}
-for model in ['mistral', 'llama', 'qwen']:
+for model in ['mistral',]:# 'llama', 'qwen']:
     results[model] = {}
     df = pd.read_csv(f'./results/{model}/bbq_full_baseline.csv')
     results[model]['baseline'] = {}

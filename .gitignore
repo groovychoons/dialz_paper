@@ -2,3 +2,4 @@
 /results_copy
 **/__pycache__
 .ipynb_checkpoints
+/logs
