@@ -110,5 +110,3 @@ for model in ['mistral',]:# 'llama', 'qwen']:
 results_df = pd.DataFrame(results)
 print(results_df)
 
-
-print("Discrim-eval results:")
