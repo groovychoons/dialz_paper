@@ -34,16 +34,14 @@ def generate_answer(model, vector, coeff, tokenizer, context, question, answers,
     Given a model and a steering vector, generate a single-letter answer for
     either BBQ or MMLU. 
     """
-    if task == "bbq":
-        # For 3 answer choices: a, b, c
-        input_text = (
-            f"Answer with only a single letter.\n\n"
-            f"The following are multiple choice questions (with answers):\n"
-            f"{context} {question}\n"
-            f"(a) {answers[0]}\n"
-            f"(b) {answers[1]}\n"
-            f"(c) {answers[2]}\n"
-        )
+    input_text = (
+        f"Answer with only a single letter.\n\n"
+        f"The following are multiple choice questions (with answers):\n"
+        f"{context} {question}\n"
+        f"(a) {answers[0]}\n"
+        f"(b) {answers[1]}\n"
+        f"(c) {answers[2]}\n"
+    )
 
     messages = [{"role": "user", "content": input_text}]
 
@@ -111,7 +109,7 @@ def get_prediction_with_vector(model, vector, coeff, tokenizer,
 
     return predicted_label
 
-def evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_df):
+def evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_df, axis):
     """
     Evaluate accuracy on a given BBQ subset.
     """
@@ -144,10 +142,8 @@ def evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_df):
             "correct": pred == label
         })
 
-    timestamp2 = datetime.datetime.now().strftime("%Y%m%d-%H%M")
-
     bbq_results_df = pd.DataFrame(bbq_results)
-    bbq_results_df.to_csv(f"./logs/{timestamp2}_bbq_results.csv", index=False)
+    bbq_results_df.to_csv(f"./logs/{timestamp}_mistral_bbq_results_{axis}.csv", index=False)
     return correct / total if total > 0 else 0.0
 
 def evaluate_on_mmlu(model, vector, coeff, tokenizer, mmlu_df):
@@ -177,7 +173,7 @@ def evaluate_on_mmlu(model, vector, coeff, tokenizer, mmlu_df):
 results = []
 
 # Decide whether or not we are merging
-merged_vectors = True # or False
+merged_vectors = False # or False
 all_axes = True
 
 bbq_part = bbq_full[bbq_full['category'].isin(['Race_x_gender', 'Race_x_SES'])]
@@ -236,7 +232,7 @@ if merged_vectors:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_part)
+    bbq_acc             = evaluate_on_bbq(model, vector, avg_coeff, tokenizer, bbq_part, 'full')
 
     results.append({
         "type":                "merged",
@@ -291,8 +287,7 @@ if all_axes == True:
         # Train vector
         vector = ControlVector.train(model, dataset)
 
-        bbq_acc             = evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_part)
-        mmlu_acc            = evaluate_on_mmlu(model, vector, coeff, tokenizer, mmlu_df)
+        bbq_acc             = evaluate_on_bbq(model, vector, coeff, tokenizer, bbq_part, axis)
 
         results.append({
             "model":               model_name,
