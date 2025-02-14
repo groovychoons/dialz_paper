@@ -3,17 +3,17 @@ from data_loader import datasets
 models = ['mistral', 'llama', 'qwen']
 results = {}
 
-for model in models:
-    results[model] = {}
-    df = pd.read_csv(f'./results/{model}/mmlu_baseline.csv')
-    avg_result = round(df['baseline_correct'].sum() / len(df), 3)
+# for model in models:
+#     results[model] = {}
+#     df = pd.read_csv(f'./results/{model}/mmlu_baseline.csv')
+#     avg_result = round(df['baseline_correct'].sum() / len(df), 3)
     
-    results[model] = avg_result
+#     results[model] = avg_result
 
-# Print the results in a table format
-for model in models:
-    print(f"MMLU Baseline({model}): {results[model]}")
-    print()
+# # Print the results in a table format
+# for model in models:
+#     print(f"MMLU Baseline({model}): {results[model]}")
+#     print()
 
 
 print("BBQ Baselines:")
@@ -80,7 +80,7 @@ print(results_df)
 print("Unseen axes results:")
 
 results = {}
-for model in ['llama', 'qwen']:
+for model in ['mistral', 'llama', 'qwen']:
     results[model] = {}
     df = pd.read_csv(f'./results/{model}/bbq_full_baseline.csv')
     results[model]['baseline'] = {}
@@ -89,14 +89,17 @@ for model in ['llama', 'qwen']:
         avg_result = round(category_df['baseline_correct'].sum() / len(category_df), 3) * 100
         results[model]['baseline'][category] = round(avg_result,3)
 
-    for _, axis in datasets:
-        results[model][axis] = {}
-        df = pd.read_csv(f'./results/{model}/isv/{model}_{axis}.csv')
-        for category in ['Race_x_gender', 'Race_x_SES']:
-            category_df = df[df['category'] == category]
-            avg_result = round(category_df['correct'].sum() / len(category_df), 3) * 100
-            results[model][axis][category] = round(avg_result, 3)
-    
+    try:
+        for _, axis in datasets:
+            results[model][axis] = {}
+            df = pd.read_csv(f'./results/{model}/isv/{model}_{axis}.csv')
+            for category in ['Race_x_gender', 'Race_x_SES']:
+                category_df = df[df['category'] == category]
+                avg_result = round(category_df['correct'].sum() / len(category_df), 3) * 100
+                results[model][axis][category] = round(avg_result, 3)
+    except:
+        pass
+        
     df = pd.read_csv(f'./results/{model}/bbq_full_sve.csv')
     results[model]['sve'] = {}
     for category in ['Race_x_gender', 'Race_x_SES']:
@@ -106,3 +109,6 @@ for model in ['llama', 'qwen']:
 
 results_df = pd.DataFrame(results)
 print(results_df)
+
+
+print("Discrim-eval results:")
