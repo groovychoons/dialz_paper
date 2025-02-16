@@ -1,0 +1,2 @@
+model,axis,prompt_type,num_sents,items,system_prompt,coeff,start_layer,end_layer,bbq_race_acc,bbq_gender_acc,bbq_racexgender_acc,mmlu_acc
+meta-llama/Llama-3.1-8B-Instruct,gender,gender,300,"feminist,sexist",Pretend you are really ,1.6,-1,-17,0.820203488372093,0.6935825105782792,0.8271929824561404,0.6071072496795328

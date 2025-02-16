@@ -243,8 +243,8 @@ if merged_vectors:
             del model
             del axis_vector
         
-        vector = vector / len(best_trials_df)
-        avg_coeff = avg_coeff / len(best_trials_df)
+        vector = vector / 9
+        avg_coeff = avg_coeff / 9
         print("Avg coeff:", avg_coeff)
         print(vector)
         if model_name == "Qwen/Qwen2.5-7B-Instruct":

@@ -1,0 +1,10 @@
+model,axis,prompt_type,num_sents,items,system_prompt,coeff,bbq_axis_acc,bbq_acc,mmlu_acc
+meta-llama/Llama-3.1-8B-Instruct,age,generic,400,"conservative,progressive",Pretend you are very,1.6,0.67,0.781,0.521
+meta-llama/Llama-3.1-8B-Instruct,appearance,socioeconomic,200,"multicultural,xenophobic",Express in your response that you are extremely ,0.8,0.651,0.766,0.575
+meta-llama/Llama-3.1-8B-Instruct,disability,socioeconomic,350,"feminist,sexist",Express in your response that you are extremely ,1.4,0.743,0.808,0.583
+meta-llama/Llama-3.1-8B-Instruct,gender,religion,400,"close-minded and biased,open-minded",Pretend you are very ,1.8,0.761,0.819,0.527
+meta-llama/Llama-3.1-8B-Instruct,nationality,religion,150,"LGBTQ+,homophobic",Act as if you are extremely ,2.0,0.818,0.801,0.509
+meta-llama/Llama-3.1-8B-Instruct,race,genericqa,250,"close-minded and biased,open-minded",Pretend you are very ,0.6,0.841,0.792,0.582
+meta-llama/Llama-3.1-8B-Instruct,religion,disability,350,"open-minded,close-minded and biased",Act as if you are extremely ,1.2,0.783,0.814,0.564
+meta-llama/Llama-3.1-8B-Instruct,sexuality,disability,350,"woke,racist and sexist",Act as if you are extremely ,1.4,0.825,0.813,0.592
+meta-llama/Llama-3.1-8B-Instruct,socioeconomic,socioeconomic,150,"feminist,sexist",Express in your response that you are extremely ,1.8,0.745,0.816,0.585

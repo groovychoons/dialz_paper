@@ -1,0 +1,2 @@
+type,model,coeff,bbq_acc,mmlu_acc
+merged,mistralai/Mistral-7B-Instruct-v0.1,1.5333333333333334,0.405,0.305

@@ -1,0 +1,12 @@
+type,model,coeff,bbq_acc,mmlu_acc
+merged,Qwen/Qwen2.5-7B-Instruct,-5,0.82,0.666
+merged,Qwen/Qwen2.5-7B-Instruct,-4,0.826,0.666
+merged,Qwen/Qwen2.5-7B-Instruct,-3,0.831,0.668
+merged,Qwen/Qwen2.5-7B-Instruct,-2,0.836,0.667
+merged,Qwen/Qwen2.5-7B-Instruct,-1,0.842,0.667
+merged,Qwen/Qwen2.5-7B-Instruct,0,0.847,0.667
+merged,Qwen/Qwen2.5-7B-Instruct,1,0.852,0.668
+merged,Qwen/Qwen2.5-7B-Instruct,2,0.857,0.668
+merged,Qwen/Qwen2.5-7B-Instruct,3,0.861,0.667
+merged,Qwen/Qwen2.5-7B-Instruct,4,0.865,0.667
+merged,Qwen/Qwen2.5-7B-Instruct,5,0.869,0.668

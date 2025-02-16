@@ -1,0 +1,10 @@
+type,model,axis,bbq_axis_acc,bbq_acc,mmlu_acc
+merged,mistralai/Mistral-7B-Instruct-v0.1,age,0.572,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,appearance,0.652,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,disability,0.604,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,gender,0.623,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,nationality,0.689,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,race,0.675,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,religion,0.651,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,sexuality,0.625,0.665,0.416
+merged,mistralai/Mistral-7B-Instruct-v0.1,socioeconomic,0.686,0.665,0.416

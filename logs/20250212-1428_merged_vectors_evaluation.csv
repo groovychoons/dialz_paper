@@ -1,0 +1,2 @@
+type,model,coeff,bbq_acc,mmlu_acc
+merged,Qwen/Qwen2.5-7B-Instruct,2.0,0.871,0.67
